@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "204387271655",
+    "project_id": "ideation-6bc38",
+    "storage_bucket": "ideation-6bc38.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:204387271655:android:273bff95eb6587ae943342",
+        "android_client_info": {
+          "package_name": "com.example.ideation"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWGZp8L5elr_sjDdXRGYR7mFKGGQCuhvU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

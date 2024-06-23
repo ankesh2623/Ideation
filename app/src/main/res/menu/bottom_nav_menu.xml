@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="Home"
+        android:icon="@drawable/home_vec"
+        android:id="@+id/home"/>
+    <item android:title="Feed"
+        android:icon="@drawable/feed_vec"
+        android:id="@+id/feed"/>
+    <item android:title="Ideation"
+        android:icon="@drawable/ic_search"
+        android:id="@+id/idea_about"/>
+    <item android:title="mark"
+        android:icon="@drawable/bookmarks_vec"
+        android:id="@+id/bookmark"/>
+    <item android:title="Profile"
+        android:icon="@drawable/profile_vec"
+        android:id="@+id/profile"/>
+</menu>

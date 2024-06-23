@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Ideation</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string-array name="profession">
+        <item>Profession</item>
+        <item>Android Developer</item>
+        <item>Web Developer</item>
+        <item>Machine Learner</item>
+        <item>Product Manager</item>
+        <item>Designer</item>
+        <item>Marketing Analyst</item>
+        <item>Other</item>
+    </string-array>
+
+</resources>
