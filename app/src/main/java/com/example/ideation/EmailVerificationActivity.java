@@ -18,6 +18,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
@@ -60,17 +61,16 @@ public class EmailVerificationActivity extends AppCompatActivity implements Adap
                 }
                 UserModel user = new UserModel(userName, profession, userID, adress,"default");
                 db.getReference().child("Users").child(userID).setValue(user).
-                addOnCompleteListener(new OnCompleteListener<Void>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-                        Toast.makeText(EmailVerificationActivity.this, "User Data Added", Toast.LENGTH_SHORT).show();
-                        Log.d("EmailVerification","User Data Added");
-                        SharedPreferences sp = getSharedPreferences("handleReg",MODE_PRIVATE);
-                        sp.edit().putInt("posi",2).apply();
-                        startActivity(new Intent(EmailVerificationActivity.this, BottomNavActivity.class));
-                        finish();
-                    }
-                });
+                        addOnCompleteListener(new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                Log.d("EmailVerification","User Data Added");
+                                SharedPreferences sp = getSharedPreferences("handleReg",MODE_PRIVATE);
+                                sp.edit().putInt("posi",2).apply();
+                                startActivity(new Intent(EmailVerificationActivity.this, BottomNavActivity.class));
+                                finish();
+                            }
+                        });
             }
         });
     }
@@ -78,19 +78,30 @@ public class EmailVerificationActivity extends AppCompatActivity implements Adap
 
 
     public void check(View view) {
-        fAuth.signInWithEmailAndPassword(email,pass);
-        if (fAuth.getCurrentUser().isEmailVerified()){
-            binding.textView6.setVisibility(View.GONE);
-            binding.resendText.setVisibility(View.GONE);
-            binding.check.setVisibility(View.GONE);
-            binding.profession.setVisibility(View.VISIBLE);
-            binding.address.setVisibility(View.VISIBLE);
-            binding.verefied.setVisibility(View.VISIBLE);
-            binding.submitButton.setVisibility(View.VISIBLE);
-            Toast.makeText(EmailVerificationActivity.this, "Email is Verified", Toast.LENGTH_SHORT).show();
-        }
-        else makeToast("Please Verify Email First");
+        fAuth.signInWithEmailAndPassword(email, pass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+            @Override
+            public void onComplete(@NonNull Task<AuthResult> task) {
+                if (task.isSuccessful()) {
+                    FirebaseUser currentUser = fAuth.getCurrentUser();
+                    if (currentUser != null && currentUser.isEmailVerified()) {
+                        binding.textView6.setVisibility(View.GONE);
+                        binding.resendText.setVisibility(View.GONE);
+                        binding.check.setVisibility(View.GONE);
+                        binding.profession.setVisibility(View.VISIBLE);
+                        binding.address.setVisibility(View.VISIBLE);
+                        binding.verefied.setVisibility(View.VISIBLE);
+                        binding.submitButton.setVisibility(View.VISIBLE);
+                        Toast.makeText(EmailVerificationActivity.this, "Email is Verified", Toast.LENGTH_SHORT).show();
+                    } else {
+                        makeToast("Please Verify Email First");
+                    }
+                } else {
+                    makeToast("Authentication failed: " + task.getException().getMessage());
+                }
+            }
+        });
     }
+
 
 
     private void initialise() {
@@ -147,7 +158,7 @@ public class EmailVerificationActivity extends AppCompatActivity implements Adap
 
     @Override
     protected void onDestroy() {
-        fuser.delete();
+//        fuser.delete();
         super.onDestroy();
     }
 

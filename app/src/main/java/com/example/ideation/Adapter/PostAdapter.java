@@ -2,6 +2,7 @@ package com.example.ideation.Adapter;
 
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,7 @@ import com.example.ideation.Model.PostModel;
 import com.example.ideation.Model.UserModel;
 import com.example.ideation.R;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -33,127 +35,138 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.HomeViewHolder
 
     private List<PostModel> posts = new ArrayList<>();
     private Context context;
-    FirebaseFirestore fstore;
-    String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-    boolean toshow;
-    DatabaseReference ref;
+    private FirebaseFirestore fstore;
+    private String uid;
+    private DatabaseReference ref;
+    private boolean toshow;
 
     public PostAdapter(List<PostModel> posts, Context context, boolean toshow) {
         this.posts = posts;
         this.context = context;
         this.toshow = toshow;
+
+        // Initialize Firebase components
+        fstore = FirebaseFirestore.getInstance();
+//        uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        uid = currentUser != null ? currentUser.getUid() : null;
+        ref = FirebaseDatabase.getInstance().getReference();
     }
 
     @NonNull
     @Override
     public HomeViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        fstore = FirebaseFirestore.getInstance();
-        View view = LayoutInflater.from(context).inflate(R.layout.post_item,parent,false);
+        View view = LayoutInflater.from(context).inflate(R.layout.post_item, parent, false);
         return new HomeViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull HomeViewHolder holder, int position) {
         PostModel post = posts.get(position);
-        ref = FirebaseDatabase.getInstance().getReference();
 
-        if (post.getUserID().equals(uid)){
-            holder.delete.setVisibility(View.VISIBLE);
-            holder.delete.setOnClickListener(new View.OnClickListener() {
+        // Ensure ref is not null before using
+        if (ref != null) {
+            if (post.getUserID().equals(uid)) {
+                holder.delete.setVisibility(View.VISIBLE);
+                holder.delete.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        ref.child("posts").child(post.getPostUrl()).removeValue();
+                        ref.child("likes").child(post.getPostUrl()).removeValue();
+                        ref.child("comments").child(post.getPostUrl()).removeValue();
+                        ref.child("saves").child(post.getPostUrl()).removeValue();
+                    }
+                });
+            }
+
+            // Bind other data
+            holder.overView.setText(post.getOverview());
+            holder.description.setText(post.getDescription());
+
+            ref.child("Users").child(post.getUserID()).addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    UserModel user = snapshot.getValue(UserModel.class);
+                    if (user != null) {
+                        holder.profession.setText(user.getProfession());
+                        holder.userName.setText(user.getUserName());
+                        if ("default".equals(user.getImageURL())) {
+                            holder.profileImage.setImageResource(R.drawable.avatar);
+                        } else {
+                            Picasso.get().load(user.getImageURL()).into(holder.profileImage);
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e("PostAdapter", "Error fetching user data: " + error.getMessage());
+                }
+            });
+
+            holder.time.setText(post.getTime());
+            isLiked(post.getPostUrl(), holder.like, holder.likecount);
+            getSaveCount(post.getPostUrl(), holder.savecount, holder.bookmark);
+            getCommentCount(post.getPostUrl(), holder.commentcount);
+
+            holder.bookmark.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    ref.child("posts").child(post.getPostUrl()).removeValue();
-                    ref.child("likes").child(post.getPostUrl()).removeValue();
-                    ref.child("comments").child(post.getPostUrl()).removeValue();
-                    ref.child("saves").child(post.getPostUrl()).removeValue();
+                    if (holder.bookmark.getTag().equals(0))
+                        ref.child("saves").child(post.getPostUrl()).child(uid).setValue(true);
+                    else
+                        ref.child("saves").child(post.getPostUrl()).child(uid).removeValue();
+                }
+            });
+
+            holder.comment.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    gotoComments(post.getPostUrl(), post.getUserID());
+                }
+            });
+
+            holder.commentcount.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    gotoComments(post.getPostUrl(), post.getUserID());
+                }
+            });
+
+            holder.like.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (holder.like.getTag().equals(0)) {
+                        ref.child("likes").child(post.getPostUrl()).child(uid).setValue(true);
+                    } else {
+                        ref.child("likes").child(post.getPostUrl()).child(uid).removeValue();
+                    }
                 }
             });
         }
-
-        holder.overView.setText(post.getOverview());
-        holder.description.setText(post.getDescription());
-        ref.child("Users").
-                child(post.getUserID()).addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                UserModel user = snapshot.getValue(UserModel.class);
-                holder.profession.setText(user.getProfession());
-                holder.userName.setText(user.getUserName());
-                if (user.getImageURL().equals("default")){
-                    holder.profileImage.setImageResource(R.drawable.avatar);
-                }
-                else Picasso.get().load(user.getImageURL()).into(holder.profileImage);
-            }
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
-        });
-        holder.time.setText(post.getTime());
-
-        isLiked(post.getPostUrl(),holder.like,holder.likecount);
-
-        getSaveCount(post.getPostUrl(),holder.savecount, holder.bookmark);
-
-        getCommentCount(post.getPostUrl(),holder.commentcount);
-
-        holder.bookmark.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (holder.bookmark.getTag().equals(0))
-                    ref.child("saves").child(post.getPostUrl()).child(uid).setValue(true);
-                else
-                    ref.child("saves").child(post.getPostUrl()).child(uid).removeValue();
-            }
-        });
-
-        holder.comment.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                gotoComments(post.getPostUrl(), post.getUserID());
-            }
-        });
-        holder.commentcount.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                gotoComments(post.getPostUrl(), post.getUserID());
-            }
-        });
-
-        holder.like.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (holder.like.getTag().equals(0)){
-                    ref.child("likes").child(post.getPostUrl()).
-                            child(uid).setValue(true);
-                }
-                else{
-                    ref.child("likes").child(post.getPostUrl()).child(uid).removeValue();
-                }
-            }
-        });
     }
 
     private void getSaveCount(String postUrl, TextView savecount, ImageButton bookmark) {
-        ref.child("saves").child(postUrl).
-                addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        savecount.setText(snapshot.getChildrenCount()+" saves");
-                        if (snapshot.child(uid).exists()){
-                            bookmark.setTag(1);
-                            bookmark.setImageResource(R.drawable.ic_bookmarked);
-                        }
-                        else{
-                            bookmark.setTag(0);
-                            bookmark.setImageResource(R.drawable.bookmarks_vec);
-                        }
+        if (ref != null) {
+            ref.child("saves").child(postUrl).addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    savecount.setText(snapshot.getChildrenCount() + " saves");
+                    if (snapshot.child(uid).exists()) {
+                        bookmark.setTag(1);
+                        bookmark.setImageResource(R.drawable.ic_bookmarked);
+                    } else {
+                        bookmark.setTag(0);
+                        bookmark.setImageResource(R.drawable.bookmarks_vec);
                     }
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
+                }
 
-                    }
-                });
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e("PostAdapter", "Error fetching save count: " + error.getMessage());
+                }
+            });
+        }
     }
 
     @Override
@@ -164,7 +177,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.HomeViewHolder
     public class HomeViewHolder extends RecyclerView.ViewHolder {
 
         private TextView userName, profession, overView, description;
-        private TextView likecount,commentcount,savecount,time, delete;
+        private TextView likecount, commentcount, savecount, time, delete;
         private ImageView profileImage;
         private ImageButton like, bookmark;
         private LinearLayout comment;
@@ -187,47 +200,49 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.HomeViewHolder
         }
     }
 
-    private void isLiked(String postId, ImageButton button, TextView likecount){
-        ref.child("likes").child(postId).addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                likecount.setText(snapshot.getChildrenCount()+" likes");
-                if (snapshot.child(uid).exists()){
-                    button.setTag(1);
-                    button.setImageResource(R.drawable.ic_liked);
+    private void isLiked(String postId, ImageButton button, TextView likecount) {
+        if (ref != null) {
+            ref.child("likes").child(postId).addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    likecount.setText(snapshot.getChildrenCount() + " likes");
+                    if (snapshot.child(uid).exists()) {
+                        button.setTag(1);
+                        button.setImageResource(R.drawable.ic_liked);
+                    } else {
+                        button.setTag(0);
+                        button.setImageResource(R.drawable.ic_like);
+                    }
                 }
-                else {
-                    button.setTag(0);
-                    button.setImageResource(R.drawable.ic_like);
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e("PostAdapter", "Error fetching like count: " + error.getMessage());
                 }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
-        });
+            });
+        }
     }
 
-    public void getCommentCount(String postID, TextView count){
-        ref.child("comments").child(postID).addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                count.setText(snapshot.getChildrenCount()+" Comments");
-            }
+    public void getCommentCount(String postID, TextView count) {
+        if (ref != null) {
+            ref.child("comments").child(postID).addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    count.setText(snapshot.getChildrenCount() + " Comments");
+                }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
-        });
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e("PostAdapter", "Error fetching comment count: " + error.getMessage());
+                }
+            });
+        }
     }
 
-    public void gotoComments(String posturl,String postUserId){
+    public void gotoComments(String posturl, String postUserId) {
         Intent intent = new Intent(context, CommentPageActivity.class);
-        intent.putExtra("postId",posturl);
-        intent.putExtra("authorId",postUserId);
+        intent.putExtra("postId", posturl);
+        intent.putExtra("authorId", postUserId);
         context.startActivity(intent);
     }
-
 }

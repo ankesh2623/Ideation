@@ -23,7 +23,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 public class RegisterActivity extends AppCompatActivity {
 
     Button register;
-    TextInputEditText username,email,password;
+    TextInputEditText username, email, password;
     FirebaseAuth mAuth;
     FirebaseFirestore fstore;
     ProgressBar pbar;
@@ -40,7 +40,6 @@ public class RegisterActivity extends AppCompatActivity {
         fstore = FirebaseFirestore.getInstance();
         pbar = findViewById(R.id.progressBar);
 
-
         register.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -50,10 +49,10 @@ public class RegisterActivity extends AppCompatActivity {
                 if (userName.isEmpty()) username.setError("Name is Required!");
                 else if (emails.isEmpty()) email.setError("Email is Required! ");
                 else if (passwords.isEmpty()) password.setError("Password is Required! ");
-                else{
+                else {
                     pbar.setVisibility(View.VISIBLE);
                     register.setVisibility(View.INVISIBLE);
-                    mAuth.createUserWithEmailAndPassword(emails,passwords).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                    mAuth.createUserWithEmailAndPassword(emails, passwords).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
                         @Override
                         public void onComplete(@NonNull Task<AuthResult> task) {
                             if (task.isSuccessful()) {
@@ -63,16 +62,16 @@ public class RegisterActivity extends AppCompatActivity {
                                     @Override
                                     public void onSuccess(Void unused) {
                                         Intent intent = new Intent(RegisterActivity.this, EmailVerificationActivity.class);
-                                        intent.putExtra("userName",userName);
-                                        intent.putExtra("email",emails);
-                                        intent.putExtra("password",passwords);
+                                        intent.putExtra("userName", userName);
+                                        intent.putExtra("email", emails);
+                                        intent.putExtra("password", passwords);
                                         startActivity(intent);
                                         finish();
                                     }
                                 }).addOnFailureListener(new OnFailureListener() {
                                     @Override
                                     public void onFailure(@NonNull Exception e) {
-                                        makeToast("Error: "+e.getMessage());
+                                        makeToast("Error: " + e.getMessage());
                                         pbar.setVisibility(View.INVISIBLE);
                                         register.setVisibility(View.VISIBLE);
                                     }
@@ -89,14 +88,12 @@ public class RegisterActivity extends AppCompatActivity {
         });
     }
 
-
     private void makeToast(String s) {
         Toast.makeText(this, s, Toast.LENGTH_LONG).show();
     }
 
     public void LoginPage(View view) {
-        startActivity(new Intent(RegisterActivity.this,LoginActivity.class));
+        startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
         finish();
     }
-
 }

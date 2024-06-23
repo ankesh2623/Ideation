@@ -15,6 +15,7 @@ import com.example.ideation.Model.PostModel;
 import com.example.ideation.R;
 import com.example.ideation.databinding.FragmentFeedBinding;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
@@ -44,8 +45,9 @@ public class FeedFragment extends Fragment {
 
         fstore = FirebaseFirestore.getInstance();
         db=FirebaseDatabase.getInstance();
-        userID = FirebaseAuth.getInstance().getCurrentUser().getUid();
-
+//        userID = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        userID = currentUser != null ? currentUser.getUid() : null;
 
         db.getReference().child("posts").addValueEventListener(new ValueEventListener() {
             @Override
